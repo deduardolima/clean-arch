@@ -45,12 +45,14 @@ func main() {
 
 	createOrderUseCase := NewCreateOrderUseCase(db, eventDispatcher)
 
+	// Iniciar servidor web
 	webserver := webserver.NewWebServer(configs.WebServerPort)
 	webOrderHandler := NewWebOrderHandler(db, eventDispatcher)
 	webserver.AddHandler("/order", webOrderHandler.Create)
 	fmt.Println("Starting web server on port", configs.WebServerPort)
 	go webserver.Start()
 
+	// Iniciar servidor gRPC
 	grpcServer := grpc.NewServer()
 	createOrderService := service.NewOrderService(*createOrderUseCase)
 	pb.RegisterOrderServiceServer(grpcServer, createOrderService)
@@ -63,6 +65,7 @@ func main() {
 	}
 	go grpcServer.Serve(lis)
 
+	// Iniciar servidor GraphQL
 	srv := graphql_handler.NewDefaultServer(graph.NewExecutableSchema(graph.Config{Resolvers: &graph.Resolver{
 		CreateOrderUseCase: *createOrderUseCase,
 	}}))
@@ -74,7 +77,11 @@ func main() {
 }
 
 func getRabbitMQChannel() *amqp.Channel {
-	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
+	configs, err := configs.LoadConfig(".")
+	if err != nil {
+		panic(err)
+	}
+	conn, err := amqp.Dial(fmt.Sprintf("amqp://%s:%s@%s:%s/", configs.RabbitMQUser, configs.RabbitMQPassword, configs.RabbitMQHost, configs.RabbitMQPort))
 	if err != nil {
 		panic(err)
 	}

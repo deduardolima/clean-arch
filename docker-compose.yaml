@@ -6,11 +6,10 @@ services:
     container_name: mysql
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: orders
-      MYSQL_PASSWORD: root
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
     ports:
-      - 3306:3306
+      - "${DB_PORT}:${DB_PORT}"
     volumes:
       - .docker/mysql:/var/lib/mysql
 
@@ -19,8 +18,32 @@ services:
     container_name: rabbitmq-clean
     restart: always
     ports:
-      - 5672:5672
-      - 15672:15672
+      - "5672:5672"
+      - "15672:15672"
     environment:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
+
+  app:
+    build: .
+    container_name: go-app
+    restart: always
+    ports:
+      - "${WEB_SERVER_PORT}:${WEB_SERVER_PORT}"
+      - "${GRAPHQL_SERVER_PORT}:${GRAPHQL_SERVER_PORT}"
+      - "${GRPC_SERVER_PORT}:${GRPC_SERVER_PORT}"
+    depends_on:
+      - mysql
+      - rabbitmq
+    env_file:
+      - .env
+    environment:
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_USER=${DB_USER}
+      - DB_PASS=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+      - RABBITMQ_HOST=${RABBITMQ_HOST}
+      - RABBITMQ_PORT=${RABBITMQ_PORT}
+      - RABBITMQ_USER=${RABBITMQ_USER}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
