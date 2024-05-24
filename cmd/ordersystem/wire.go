@@ -6,6 +6,12 @@ package main
 import (
 	"database/sql"
 
+	"github.com/deduardolima/clean-arch/internal/entity"
+	"github.com/deduardolima/clean-arch/internal/event"
+	"github.com/deduardolima/clean-arch/internal/infra/database"
+	"github.com/deduardolima/clean-arch/internal/infra/web"
+	"github.com/deduardolima/clean-arch/internal/usecase"
+	"github.com/deduardolima/clean-arch/pkg/events"
 	"github.com/google/wire"
 )
 
