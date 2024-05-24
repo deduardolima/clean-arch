@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"testing"
 
+	"github.com/deduardolima/clean-arch/internal/entity"
 	"github.com/stretchr/testify/suite"
 
 	// sqlite3
