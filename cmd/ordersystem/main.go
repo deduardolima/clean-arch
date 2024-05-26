@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"time"
 
 	graphql_handler "github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
@@ -92,10 +93,25 @@ func getRabbitMQChannel() *amqp.Channel {
 	if err != nil {
 		panic(err)
 	}
-	conn, err := amqp.Dial(fmt.Sprintf("amqp://%s:%s@%s:%s/", configs.RabbitMQUser, configs.RabbitMQPassword, configs.RabbitMQHost, configs.RabbitMQPort))
-	if err != nil {
-		panic(err)
+	var conn *amqp.Connection
+	for i := 0; i < 5; i++ {
+		conn, err = amqp.Dial(fmt.Sprintf("amqp://%s:%s@%s:%s/",
+			configs.RabbitMQUser,
+			configs.RabbitMQPassword,
+			configs.RabbitMQHost,
+			configs.RabbitMQPort,
+		))
+		if err == nil {
+			break
+		}
+		fmt.Printf("Failed to connect to RabbitMQ, retrying in 2 seconds... (%d/5)\n", i+1)
+		time.Sleep(2 * time.Second)
 	}
+
+	if err != nil {
+		panic(fmt.Sprintf("Could not connect to RabbitMQ: %v", err))
+	}
+
 	ch, err := conn.Channel()
 	if err != nil {
 		panic(err)
