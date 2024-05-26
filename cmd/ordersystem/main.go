@@ -20,7 +20,6 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 
-	// mysql
 	_ "github.com/go-sql-driver/mysql"
 )
 
@@ -46,34 +45,46 @@ func main() {
 	createOrderUseCase := NewCreateOrderUseCase(db, eventDispatcher)
 
 	// Iniciar servidor web
-	webserver := webserver.NewWebServer(configs.WebServerPort)
-	webOrderHandler := NewWebOrderHandler(db, eventDispatcher)
-	webserver.AddHandler("/order", webOrderHandler.Create)
-	fmt.Println("Starting web server on port", configs.WebServerPort)
-	go webserver.Start()
+	go func() {
+		webserver := webserver.NewWebServer(configs.WebServerPort)
+		webOrderHandler := NewWebOrderHandler(db, eventDispatcher)
+		webserver.AddHandler("/order", webOrderHandler.Create)
+		fmt.Println("Starting web server on port", configs.WebServerPort)
+		webserver.Start()
+	}()
 
 	// Iniciar servidor gRPC
-	grpcServer := grpc.NewServer()
-	createOrderService := service.NewOrderService(*createOrderUseCase)
-	pb.RegisterOrderServiceServer(grpcServer, createOrderService)
-	reflection.Register(grpcServer)
+	go func() {
+		grpcServer := grpc.NewServer()
+		createOrderService := service.NewOrderService(*createOrderUseCase)
+		pb.RegisterOrderServiceServer(grpcServer, createOrderService)
+		reflection.Register(grpcServer)
 
-	fmt.Println("Starting gRPC server on port", configs.GRPCServerPort)
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%s", configs.GRPCServerPort))
-	if err != nil {
-		panic(err)
-	}
-	go grpcServer.Serve(lis)
+		fmt.Println("Starting gRPC server on port", configs.GRPCServerPort)
+		lis, err := net.Listen("tcp", fmt.Sprintf(":%s", configs.GRPCServerPort))
+		if err != nil {
+			panic(err)
+		}
+		if err := grpcServer.Serve(lis); err != nil {
+			fmt.Printf("gRPC server error: %v\n", err)
+		}
+	}()
 
 	// Iniciar servidor GraphQL
-	srv := graphql_handler.NewDefaultServer(graph.NewExecutableSchema(graph.Config{Resolvers: &graph.Resolver{
-		CreateOrderUseCase: *createOrderUseCase,
-	}}))
-	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
-	http.Handle("/query", srv)
+	go func() {
+		srv := graphql_handler.NewDefaultServer(graph.NewExecutableSchema(graph.Config{Resolvers: &graph.Resolver{
+			CreateOrderUseCase: *createOrderUseCase,
+		}}))
+		http.Handle("/", playground.Handler("GraphQL playground", "/query"))
+		http.Handle("/query", srv)
 
-	fmt.Println("Starting GraphQL server on port", configs.GraphQLServerPort)
-	http.ListenAndServe(":"+configs.GraphQLServerPort, nil)
+		fmt.Println("Starting GraphQL server on port", configs.GraphQLServerPort)
+		if err := http.ListenAndServe(":"+configs.GraphQLServerPort, nil); err != nil {
+			fmt.Printf("GraphQL server error: %v\n", err)
+		}
+	}()
+
+	select {}
 }
 
 func getRabbitMQChannel() *amqp.Channel {
