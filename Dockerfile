@@ -28,8 +28,6 @@ COPY --from=builder /go/bin/migrate /usr/local/bin/migrate
 
 RUN apt-get update && apt-get install -y default-mysql-client make
 
-RUN chown -R root:root /root/migrations
-RUN chmod -R 755 /root/migrations
 
 EXPOSE 8000
 EXPOSE 8080

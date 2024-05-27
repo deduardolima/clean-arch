@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"github.com/deduardolima/clean-arch/internal/entity"
+	"github.com/deduardolima/clean-arch/internal/event"
 	"github.com/deduardolima/clean-arch/pkg/events"
 )
 
@@ -26,12 +27,12 @@ type CreateOrderUseCase struct {
 
 func NewCreateOrderUseCase(
 	OrderRepository entity.OrderRepositoryInterface,
-	OrderCreated events.EventInterface,
+	EventBundle *event.EventBundle,
 	EventDispatcher events.EventDispatcherInterface,
 ) *CreateOrderUseCase {
 	return &CreateOrderUseCase{
 		OrderRepository: OrderRepository,
-		OrderCreated:    OrderCreated,
+		OrderCreated:    EventBundle.OrderCreatedEvent,
 		EventDispatcher: EventDispatcher,
 	}
 }

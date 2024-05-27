@@ -4,12 +4,12 @@ import (
 	"github.com/spf13/viper"
 )
 
-type conf struct {
+type Config struct {
 	DBDriver          string `mapstructure:"DB_DRIVER"`
 	DBUser            string `mapstructure:"DB_USER"`
 	DBPassword        string `mapstructure:"DB_PASSWORD"`
-	DBPort            string `mapstructure:"DB_PORT"`
 	DBHost            string `mapstructure:"DB_HOST"`
+	DBPort            string `mapstructure:"DB_PORT"`
 	DBName            string `mapstructure:"DB_NAME"`
 	WebServerPort     string `mapstructure:"WEB_SERVER_PORT"`
 	GRPCServerPort    string `mapstructure:"GRPC_SERVER_PORT"`
@@ -20,8 +20,8 @@ type conf struct {
 	RabbitMQPort      string `mapstructure:"RABBITMQ_PORT"`
 }
 
-func LoadConfig(path string) (*conf, error) {
-	var cfg conf
+func LoadConfig(path string) (*Config, error) {
+	var cfg Config
 	viper.AddConfigPath(path)
 	viper.SetConfigName(".env")
 	viper.SetConfigType("env")

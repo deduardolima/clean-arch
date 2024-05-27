@@ -5,25 +5,26 @@ import (
 	"net/http"
 
 	"github.com/deduardolima/clean-arch/internal/entity"
+	"github.com/deduardolima/clean-arch/internal/event"
 	"github.com/deduardolima/clean-arch/internal/usecase"
 	"github.com/deduardolima/clean-arch/pkg/events"
 )
 
 type WebOrderHandler struct {
-	EventDispatcher   events.EventDispatcherInterface
-	OrderRepository   entity.OrderRepositoryInterface
-	OrderCreatedEvent events.EventInterface
+	EventDispatcher events.EventDispatcherInterface
+	OrderRepository entity.OrderRepositoryInterface
+	EventBundle     *event.EventBundle
 }
 
 func NewWebOrderHandler(
 	EventDispatcher events.EventDispatcherInterface,
 	OrderRepository entity.OrderRepositoryInterface,
-	OrderCreatedEvent events.EventInterface,
+	EventBundle *event.EventBundle,
 ) *WebOrderHandler {
 	return &WebOrderHandler{
-		EventDispatcher:   EventDispatcher,
-		OrderRepository:   OrderRepository,
-		OrderCreatedEvent: OrderCreatedEvent,
+		EventDispatcher: EventDispatcher,
+		OrderRepository: OrderRepository,
+		EventBundle:     EventBundle,
 	}
 }
 
@@ -35,8 +36,22 @@ func (h *WebOrderHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	createOrder := usecase.NewCreateOrderUseCase(h.OrderRepository, h.OrderCreatedEvent, h.EventDispatcher)
+	createOrder := usecase.NewCreateOrderUseCase(h.OrderRepository, h.EventBundle, h.EventDispatcher)
 	output, err := createOrder.Execute(dto)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	err = json.NewEncoder(w).Encode(output)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+func (h *WebOrderHandler) List(w http.ResponseWriter, r *http.Request) {
+	listOrders := usecase.NewListOrdersUseCase(h.OrderRepository, h.EventBundle, h.EventDispatcher)
+	output, err := listOrders.Execute()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
