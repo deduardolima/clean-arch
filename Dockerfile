@@ -27,7 +27,7 @@ COPY --from=builder /app/Makefile /root/
 COPY --from=builder /go/bin/migrate /usr/local/bin/migrate
 
 RUN apt-get update && apt-get install -y default-mysql-client make
-
+RUN chmod +x ./main
 
 EXPOSE 8000
 EXPOSE 8080
